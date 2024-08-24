@@ -1,25 +1,63 @@
-import { useState } from "react";
+/* eslint-disable react/prop-types */
+import { useEffect, useState } from "react";
 
-const Calculator = () => {
+const Calculator = ({ data }) => {
+  const [active, setActive] = useState("long-term");
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [salePrice, setSalePrice] = useState(0);
   const [expenses, setExpenses] = useState(0);
-  const [investementType, setInvestmentType] = useState();
+  const [investementType, setInvestementType] = useState();
   const [annualIncome, setAnnualIncome] = useState(0);
-  const [longTermGain, setLongTermGain] = useState(0);
-  const [capitalGainAmount, setCapitalGainAmount] = useState(0);
   const [textRate, setTextRate] = useState(0);
-  const [gainAmmount, setGainAmmount] = useState();
-  const calcuateCapitalGains = () => {
-    if (active === "long-term") {
-      const capitalGain = salePrice || 0 - purchasePrice;
-      setCapitalGainAmount(capitalGain);
-      // const longTem = capitalGain * 0.5;
-      // setLongTermGain(longTem);
-    }
-  };
 
-  const [active, setActive] = useState("long-term");
+  const [capitalGainAmount, setCapitalGainAmount] = useState(0);
+  const [longTermGain, setLongTermGain] = useState(0);
+
+  const [textAmount, setTextAmount] = useState(0);
+  const [textToPay, setTextToPay] = useState(0);
+
+  useEffect(() => {
+    const purchaseRate = purchasePrice || 0;
+    const saleRate = salePrice || 0;
+    const expensesRate = expenses || 0;
+
+    // calcutaing capital gain amount
+    const capitalGainAmount = saleRate - purchaseRate - expensesRate;
+    setCapitalGainAmount(capitalGainAmount);
+
+    let discount = 0;
+    if (active === "long-term" && capitalGainAmount > 0) {
+      discount = 0.5 * capitalGainAmount;
+    }
+    setLongTermGain(discount);
+
+    const netGain =
+      active === "long-term" ? capitalGainAmount - discount : capitalGainAmount;
+    setTextAmount(netGain);
+
+    const textToPayValue =
+      active === "long-term"
+        ? (discount * annualIncome) / 100
+        : (capitalGainAmount * annualIncome) / 100;
+
+    setTextToPay(textToPayValue);
+
+    data.filter((item) => {
+      if (item.val === annualIncome) {
+        // return item.tax[0];
+        setTextRate(item.tax);
+      }
+    });
+    // console.log(mainTax);
+  }, [
+    purchasePrice,
+    salePrice,
+    expenses,
+    investementType,
+    annualIncome,
+    longTermGain,
+    capitalGainAmount,
+  ]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#eff2f5] p-4">
@@ -66,7 +104,7 @@ const Calculator = () => {
                 className="bg-transparent outline-none ml-1 flex-1"
                 onChange={(e) => {
                   setPurchasePrice(+e.target.value);
-                  calcuateCapitalGains();
+                  // calcuateCapitalGains();
                 }}
               />
             </div>
@@ -108,7 +146,10 @@ const Calculator = () => {
             <label className="mb-2">Investment Type</label>
             <div className="flex justify-between gap-4">
               <div
-                onClick={() => setActive("short-term")}
+                onClick={() => {
+                  setActive("short-term");
+                  setInvestementType("short-term");
+                }}
                 className={`py-3 px-2 rounded-lg cursor-pointer border ${
                   active === "short-term"
                     ? "border-blue-600"
@@ -126,7 +167,10 @@ const Calculator = () => {
                 )}
               </div>
               <div
-                onClick={() => setActive("long-term")}
+                onClick={() => {
+                  setActive("long-term");
+                  setInvestementType("long-term");
+                }}
                 className={`py-3 px-2 rounded-lg cursor-pointer border ${
                   active === "long-term" ? "border-blue-600" : "border-gray-400"
                 } flex-1 flex items-center justify-center`}
@@ -156,50 +200,65 @@ const Calculator = () => {
             <select
               id="annual-income"
               className="py-3 px-2 rounded-md bg-[#eff2f5]"
+              onChange={(e) => setAnnualIncome(+e.target.value)}
             >
-              <option value="">$0 - $18,200</option>
-              <option value="">$18,201 - $45,000</option>
-              <option value="">$45,001 - $120,000</option>
-              <option value="">$120,001 - $180,000</option>
-              <option value="">$180,001+</option>
+              <option value="0">$0 - $18,200</option>
+              <option value="19">$18,201 - $45,000</option>
+              <option value="32.5">$45,001 - $120,000</option>
+              <option value="37">$120,001 - $180,000</option>
+              <option value="45">$180,001+</option>
             </select>
           </div>
 
           <div className="flex flex-col">
             <label className="mb-2">Tax Rate</label>
-            <p className="bg-[#eff2f5] p-2 rounded-md">$0</p>
+            <p className="bg-[#eff2f5] p-2 rounded-md">{textRate}</p>
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 mt-4">
-          <div className="flex flex-col">
-            <label className="mb-2" htmlFor="capital-gains">
-              Capital gains amount
-            </label>
-            <div className="flex items-center bg-[#eff2f5] p-2 rounded-md">
-              <span>$</span>
-              <input
-                type="text"
-                id="capital-gains"
-                className="bg-transparent outline-none ml-1 flex-1"
-                value={capitalGainAmount}
-              />
+        {active === "long-term" && (
+          <div className="grid gap-4 sm:grid-cols-2 mt-4">
+            <div className="flex flex-col">
+              <label className="mb-2" htmlFor="capital-gains">
+                Capital gains amount
+              </label>
+              <div className="flex items-center bg-[#eff2f5] p-2 rounded-md">
+                <span>$</span>
+                <input
+                  type="text"
+                  id="capital-gains"
+                  className="bg-transparent outline-none ml-1 flex-1"
+                  value={capitalGainAmount}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <label className="mb-2" htmlFor="long-term-discount">
+                Discount for long term gains
+              </label>
+              <div className="flex items-center bg-[#eff2f5] p-2 rounded-md">
+                <span>$</span>
+                <input
+                  type="text"
+                  id="long-term-discount"
+                  className="bg-transparent outline-none ml-1 flex-1"
+                  value={longTermGain}
+                />
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="flex flex-col">
-            <label className="mb-2" htmlFor="long-term-discount">
-              Discount for long term gains
-            </label>
-            <div className="flex items-center bg-[#eff2f5] p-2 rounded-md">
-              <span>$</span>
-              <input
-                type="text"
-                id="long-term-discount"
-                className="bg-transparent outline-none ml-1 flex-1"
-                value={longTermGain}
-              />
-            </div>
+        <div className="md:flex justify-around mt-4 ">
+          <div className="h-[97px] text-center flex flex-col justify-center rounded-md md:w-[335px] w-[85%] m-auto md:m-0 mb-3 bg-[#EBF9F4]">
+            <h1>Net Capital gains tax amount</h1>
+            <p className="text-[#0FBA83] text-xl font-bold">$ {textAmount}</p>
+          </div>
+
+          <div className="bg-[#EBF2FF] h-[97px] text-center flex flex-col justify-center rounded-md md:w-[335px] w-[85%] m-auto md:m-0 mb-3">
+            <h1>The tax you need to pay</h1>
+            <p className="text-[#0141CF] font-bold text-xl">$ {textToPay}</p>
           </div>
         </div>
       </div>
